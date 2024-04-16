@@ -1,0 +1,71 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family: sans-serif;
+    background-color: black;
+}
+
+#addNew {
+    height: 60px;
+    width: 130px;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    justify-content: center;
+    align-items: center;
+    background-color: #5a006c;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+  }
+  
+  .fa-plus {
+    background-color: #5a006c;
+    padding: 3px;
+    border-radius: 3px;
+  }
+  
+  #books {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    overflow-y: auto;
+  }
+  
+  #books div {
+    border: 3px solid #670173;
+    background-color: #5a006c;
+    border-radius: 6px;
+    padding: 5px;
+    display: grid;
+    gap: 4px;
+    color: white;
+  }
+  
+  #books div .options {
+    justify-self: right;
+    display: inline-block;
+    position: relative;
+    bottom: 40px;
+    width: 40px;
+  }
+  
+  #books div .options i {
+    cursor: pointer;
+  }
+  
+  #msg {
+    color: red;
+  }
+
+h1 {
+  color: white;
+}
+
+#review {
+  word-wrap: break-all;
+}
