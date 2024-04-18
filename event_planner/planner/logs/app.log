@@ -42,3 +42,6 @@
 2024-04-16 17:58:19,757 WARN routes.users:48 	 User [cum@cum.com] signed in
 2024-04-16 17:58:22,178 INFO routes.events:18 viewing 1 events
 2024-04-16 17:58:27,467 INFO routes.events:18 viewing 1 events
+2024-04-18 13:12:03,315 INFO main:21 Application starts up...
+2024-04-18 13:12:04,133 INFO routes.events:18 viewing 1 events
+2024-04-18 13:13:27,265 INFO main:21 Application starts up...
