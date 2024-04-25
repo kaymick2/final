@@ -93,3 +93,271 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if user is None:
         raise credentials_exception
     return user
+
+def get_user(username: str):
+    user = userscoll.find_one({"username": username})
+    if user:
+        return user
+    
+async def get_current_admin_user(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
+    token = credentials.credentials
+    user = await get_current_user(token)
+    if not user['is_admin']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return user
+
+# Routes
+@app.post("/token")
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(days=3650)
+    access_token = create_access_token(data={"sub": user['username']}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+def authenticate_user(username: str, password: str):
+    user = get_user(username)
+
+    if not user:
+        return False
+    if not verify_password(password, user['password_hash']):
+        return False
+    return user
+
+@app.post("/admin/token")
+async def admin_login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_admin(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(days=3650)
+    access_token = create_access_token(data={"sub": user['username']}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+def authenticate_admin(username: str, password: str):
+    user = get_user(username)
+
+    if not user:
+        return False
+    if not verify_password(password, user['password_hash']):
+        return False
+    if not user['is_admin']:
+        return False
+    return user
+
+@app.post("/register", response_model=userscoll, response_model_by_alias=False)
+async def register_user(form_data: OAuth2PasswordRequestForm = Depends()):
+    existing_user = userscoll.find_one({"username": form_data.username})
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered",
+        )
+    password = get_password_hash(form_data.password)
+
+    user = userscoll.insert_one({
+        "username": form_data.username,
+        "password_hash": password,
+        "is_admin": False
+    })
+    return user
+
+@app.post("/reviews")
+async def create_review(title: str = Form(...), description: str = Form(...), review: str = Form(...), thumbnail: str = Form(...), current_user: UserInDB = Depends(get_current_user)):
+
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You need to be logged in to create a review",
+        )
+    
+    user = userscoll.find_one({"username": current_user['username']})
+    review = reviewscoll.insert_one({
+        "title": title,
+        "author": user['_id'],
+        "description": description,
+        "thumbnail": thumbnail,
+        "review": review,
+    })
+    return {"message": "Inserted"}
+
+@app.get("/reviews", response_model=ReviewCollection, response_model_by_alias=False)
+async def get_reviews(current_user: UserInDB = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You need to be logged in to view reviews",
+        )
+    pipeline = [
+    {
+        "$lookup": {
+            "from": "users",  # Name of the userscoll
+            "localField": "author",  # Field in reviewscoll
+            "foreignField": "_id",  # Field in userscoll
+            "as": "author"  # Alias for the joined documents
+        }
+    },
+    {
+        "$unwind": "$author"  # Unwind the author array created by the lookup stage
+    },
+    {
+        "$project": {
+            "_id": 1,
+            "title": 1,
+            "description": 1,
+            "thumbnail": 1,
+            "review": 1,
+            "author":{
+                "username":"$author.username"
+            }
+           
+        }
+    }
+    ]
+
+    reviews = list(reviewscoll.aggregate(pipeline))
+    reviews_data = []
+
+    for review in reviews:
+        if '_id' in review:
+            
+            reviews_data.append({
+                "_id":str(review['_id']),
+                "title": review.get('title', ''),
+                "thumbnail": review.get('thumbnail', ''),
+                "description": review.get('description', ''),
+                "review": review.get('review', ''),
+                "author": review.get('author', ''),
+
+            })
+        else:
+            print("Missing _id field in review:", review)
+
+    
+    
+    return JSONResponse(status_code=201, content={"reviews": reviews_data})
+
+
+@app.get("/admin/reviews", response_model=Review)
+async def admin_get_reviews(current_user: UserInDB = Depends(get_current_admin_user)):
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You need to be logged in as admin to view reviews",
+        )
+    pipeline = [
+    {
+        "$lookup": {
+            "from": "users",  # Name of the userscoll
+            "localField": "author",  # Field in reviewscoll
+            "foreignField": "_id",  # Field in userscoll
+            "as": "author"  # Alias for the joined documents
+        }
+    },
+    {
+        "$unwind": "$author"  # Unwind the author array created by the lookup stage
+    },
+    {
+        "$project": {
+            "_id": 1,
+            "title": 1,
+            "description": 1,
+            "thumbnail": 1,
+            "review": 1,
+            "author":{
+                "username":"$author.username"
+            }
+           
+        }
+    }
+    ]
+
+    reviews = list(reviewscoll.aggregate(pipeline))
+    reviews_data = []
+
+    for review in reviews:
+        if '_id' in review:
+            
+            reviews_data.append({
+                "_id":str(review['_id']),
+                "title": review.get('title', ''),
+                "thumbnail": review.get('thumbnail', ''),
+                "description": review.get('description', ''),
+                "review": review.get('review', ''),
+                "author": review.get('author', ''),
+
+            })
+        else:
+            print("Missing _id field in review:", review)
+
+    
+    
+    return JSONResponse(status_code=201, content={"reviews": reviews_data})
+
+
+@app.delete("/reviews/{review_id}")
+async def delete_review(review_id: str, current_user: UserInDB = Depends(get_current_admin_user)):
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You need to be logged in to delete a review",
+        )
+    result = reviewscoll.delete_one({"_id": ObjectId(review_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Review not found",
+        )
+    return {"message": "Review deleted successfully"}
+
+@app.get("/admin/reviews/{review_id}", response_model=Review)
+async def get_review(review_id: str):
+    if not ObjectId.is_valid(review_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid review ID")
+    
+    review = reviewscoll.find_one({"_id":ObjectId(review_id)})
+    
+    
+    return JSONResponse(status_code=201, content={"review": {
+        "id":str(review['_id']),
+        "title":review['title'],
+        "description":review['description'],
+        "thumbnail":review['thumbnail'],
+        "review":review['review'],
+        
+    }})
+
+
+@app.put("/reviews/{review_id}")
+async def update_review(
+    review_id: str, title: str = Form(...),description: str = Form(...), review: str = Form(...),thumbnail: str = Form(...), current_user: UserInDB = Depends(get_current_admin_user)
+):
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You need to be logged in to update a review",
+        )
+    print("Review id:",review_id)
+    result = reviewscoll.update_one({"_id": ObjectId(str(review_id))}, {"$set": {
+        "title": title,
+        "description": description,
+        "thumbnail": thumbnail,
+        "review": review
+    }})
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Review not found",
+        )
+    return {"message": "Review updated successfully"}
