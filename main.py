@@ -35,7 +35,7 @@ ALGORITHM = "HS256"
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-PyObjectd = Annotated[str, BeforeValidator(str)]
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class UserInDB(BaseModel):
     username:str
@@ -55,8 +55,13 @@ class Review(BaseModel):
     author: str
 
 class ReviewCollection(BaseModel):
+    reviews: List[Review] = []
+    
+class UserCollection(BaseModel):
     users: List[User] = []
-
+  
+#class ThumbnailCollection(BaseModel):
+ #   covers:List[Thumbnails]=[]
 
 # Password functions
 def verify_password(plain_password, hashed_password):
@@ -156,7 +161,7 @@ def authenticate_admin(username: str, password: str):
         return False
     return user
 
-@app.post("/register", response_model=userscoll, response_model_by_alias=False)
+@app.post("/register", response_model=UserCollection, response_model_by_alias=False)
 async def register_user(form_data: OAuth2PasswordRequestForm = Depends()):
     existing_user = userscoll.find_one({"username": form_data.username})
     if existing_user:
