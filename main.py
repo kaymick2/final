@@ -21,7 +21,7 @@ import shutil
 import json
 
 # MongoDB Connection
-client = MongoClient("mongodb+srv://Shoaib:Games@cluster0.opefj9i.mongodb.net/")
+client = MongoClient("mongodb+srv://kaymickx17:as2final25!@ka4x.fablnpj.mongodb.net/?retryWrites=true&w=majority&appName=KA4X")
 db = client["bookstore"]
 users_collection = db["users"]
 reviews_collection = db["reviews"] 

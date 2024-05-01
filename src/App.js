@@ -13,8 +13,10 @@ import AdminLogin from "./pages/admin/login";
 import AdminGuestRequired from "./components/AdminGuestRequired";
 
 import AdminAuthRequired from "./components/AdminAuthRequired";
-import AdminReviews from "./pages/admin/reviews";
-import UpdateReview from "./pages/admin/update_review";
+
+import ViewBook from "./pages/home/view_book";
+import AdminViewBook from "./pages/admin/view_book";
+import AdminHome from "./pages/admin";
 
 
 const App = ()=>{
@@ -38,19 +40,27 @@ const App = ()=>{
           </AuthRequired>} />
 
 
+          <Route path="/book/:id" element={<AuthRequired>
+            <ViewBook />
+          </AuthRequired>} />
+
+          
+
+          {/* Admin Routes */}
 
           <Route path="/admin/login" element={<AdminGuestRequired>
             <AdminLogin />
           </AdminGuestRequired>} />
 
-          <Route path="/admin/" element={<AdminAuthRequired>
-            <AdminReviews />
+
+          <Route path="/admin" element={<AdminAuthRequired>
+            <AdminHome />
           </AdminAuthRequired>} />
 
-          <Route path="/admin/edit/review/:review_id" element={<AdminAuthRequired>
-            <UpdateReview />
-          </AdminAuthRequired>} />
 
+          <Route path="/admin/book/:id" element={<AdminAuthRequired>
+            <AdminViewBook />
+          </AdminAuthRequired>} />
 
         </Switch>
     </Router>
