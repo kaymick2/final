@@ -49,7 +49,7 @@ const Login = () => {
         </div>
         <button type="submit" className="btn btn-primary">Login</button>
         <br />
-        <Link to={'/register'} >dont have an account?want to register</Link>
+        <Link to={'/register'} >Don't have an account? Sign up here. </Link>
       </form>
     </div>
   );
