@@ -1,5 +1,5 @@
 # Lit Reviews
-
+DEMO: [The Demo was too long to fit into a GIF](https://youtu.be/EeapOdRD9qg)
 ## To start website
 
 ```terminal
@@ -10,7 +10,8 @@ pip install -r requirements.txt
 npm start
 ```
 
-Which will open the website then, in a new terminal:
+This opens the backend. 
+### Then, in a new terminal:
 
 ```terminal
 .\venv\scripts\activate
